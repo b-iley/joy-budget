@@ -1,6 +1,11 @@
-import * as pdfjsLib from 'pdfjs-dist'
+// The "legacy" build (same package, same API, more bundled polyfills) is
+// pdf.js's own officially-documented entry point for browsers that don't
+// support every modern JS feature the default build assumes — switched to
+// after a real iPhone threw "undefined is not a function" deep inside the
+// default build's worker on a real KB bank statement PDF.
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).href
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.mjs', import.meta.url).href
 
 export interface PdfTextItem {
   text: string
