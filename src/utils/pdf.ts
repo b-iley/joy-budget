@@ -41,12 +41,20 @@ export async function extractPdfText(file: File, password?: string): Promise<Pdf
   const items: PdfTextItem[] = []
 
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum)
-    const content = await page.getTextContent()
-    for (const item of content.items) {
-      if ('str' in item && item.str.trim()) {
-        items.push({ text: item.str.trim(), x: item.transform[4], y: item.transform[5], page: pageNum })
+    try {
+      const page = await pdf.getPage(pageNum)
+      const content = await page.getTextContent()
+      // content.items has been seen coming back nullish on at least one real
+      // device/PDF combination (cause unconfirmed) — guard it instead of
+      // crashing the whole import over one odd page.
+      for (const item of content.items ?? []) {
+        if ('str' in item && item.str.trim()) {
+          items.push({ text: item.str.trim(), x: item.transform[4], y: item.transform[5], page: pageNum })
+        }
       }
+    } catch (err) {
+      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+      throw new Error(`${pageNum}페이지 처리 실패 (${detail})`)
     }
   }
 
