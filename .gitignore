@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# tesseract.js caches these into the cwd when OCR verification scripts are
+# run directly via Node from the project root (not used by the app itself,
+# which fetches its own worker/lang data in the browser).
+*.traineddata
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

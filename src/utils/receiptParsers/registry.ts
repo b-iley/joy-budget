@@ -1,4 +1,5 @@
 import type { OcrLine } from '../ocr'
+import { parseCoupangReceipt } from './coupang'
 import { parseCoupangEatsReceipt } from './coupangEats'
 import type { ParsedReceipt } from './types'
 
@@ -17,5 +18,11 @@ export const RECEIPT_PLATFORMS: ReceiptPlatform[] = [
     defaultCategoryId: 'food',
     defaultSubcategoryId: 'delivery',
     parse: parseCoupangEatsReceipt,
+  },
+  {
+    id: 'coupang',
+    label: '쿠팡',
+    defaultCategoryId: 'shopping',
+    parse: parseCoupangReceipt,
   },
 ]

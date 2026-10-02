@@ -11,6 +11,10 @@ export interface StatementPlatform {
   shouldExclude: (row: ParsedStatementRow) => boolean
 }
 
+// Exact match only (not substring) — e.g. plain "쿠팡" must stay excluded
+// without also catching an unrelated merchant whose name merely contains it.
+const EXCLUDED_COUNTERPARTIES = ['쿠팡이츠', '쿠팡', '네이버페이']
+
 export const STATEMENT_PLATFORMS: StatementPlatform[] = [
   {
     id: 'kb-bank',
@@ -18,8 +22,9 @@ export const STATEMENT_PLATFORMS: StatementPlatform[] = [
     requiresPassword: true,
     defaultCategoryId: 'etc_expense',
     parse: parseKbStatement,
-    // per user: skip deposits entirely, and skip 쿠팡이츠 withdrawals (already
-    // captured via the receipt-upload flow, so keeping them here would double-count).
-    shouldExclude: (row) => row.deposit > 0 || row.counterparty === '쿠팡이츠',
+    // per user: skip deposits entirely, and skip withdrawals to merchants
+    // that are already captured via their own dedicated upload flow (영수증
+    // 업로드 등), so keeping them here would double-count.
+    shouldExclude: (row) => row.deposit > 0 || EXCLUDED_COUNTERPARTIES.includes(row.counterparty ?? ''),
   },
 ]
