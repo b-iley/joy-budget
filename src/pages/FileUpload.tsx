@@ -231,10 +231,12 @@ export function FileUpload() {
       setDrafts(results)
       setStep('review')
     } catch (err) {
+      console.error('PDF 분석 실패:', err)
       if (err instanceof PdfPasswordError) {
         setError(err.reason === 'wrong-password' ? '비밀번호가 올바르지 않아요.' : 'PDF 비밀번호를 입력해주세요.')
       } else {
-        setError('PDF를 읽지 못했어요. 파일 형식을 확인해주세요.')
+        const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+        setError(`PDF를 읽지 못했어요 (${detail}). 이 메시지를 알려주세요.`)
       }
       setStep('select')
     }
