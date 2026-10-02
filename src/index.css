@@ -578,18 +578,18 @@ button {
   gap: 6px;
 }
 
-/* Native month inputs and a plain number input don't share an intrinsic
-   height, so both are pinned to the same explicit height instead of relying
-   on matching padding alone. */
-.fixed-expense-field input[type='month'] {
-  height: 46px;
-}
-
+/* Mobile Safari renders a native month input's own chrome taller than its
+   CSS height (unlike a plain number input) and some browsers ignore height
+   on it entirely — overflow: hidden on the box is what actually clips it
+   back down to match the day field, not the height/padding alone. Every
+   month input in this form (시작월, 종료월) is wrapped in this box so they
+   all render at the exact same height as the 매달 field. */
 .fixed-expense-day-input {
   display: flex;
   align-items: center;
   gap: 6px;
   height: 46px;
+  overflow: hidden;
   background: var(--surface-muted);
   border-radius: var(--radius-card);
   padding: 0 13px;
@@ -598,10 +598,17 @@ button {
 .fixed-expense-day-input input {
   flex: 1;
   min-width: 0;
+  height: 100%;
   border: none;
   background: none;
   font-size: 14px;
   color: var(--text);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.fixed-expense-day-input input[type='month'] {
+  padding: 0;
 }
 
 .fixed-expense-day-input input:focus {
@@ -1281,7 +1288,8 @@ button {
 }
 
 .inline-field-row input[type='text'],
-.inline-field-row input[type='month'] {
+.inline-field-row input[type='month'],
+.inline-field-row .fixed-expense-day-input {
   flex: 1;
   min-width: 0;
 }

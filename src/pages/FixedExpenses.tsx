@@ -149,14 +149,18 @@ export function FixedExpenses() {
           </label>
           <label className="fixed-expense-field">
             <span className="field-label">시작월</span>
-            <input type="month" value={startMonth} onChange={(e) => setStartMonth(e.target.value)} />
+            <div className="fixed-expense-day-input">
+              <input type="month" value={startMonth} onChange={(e) => setStartMonth(e.target.value)} />
+            </div>
           </label>
         </div>
 
         <label className="fixed-expense-field">
           <span className="field-label">종료월 (선택, 비워두면 계속 반복돼요)</span>
           <div className="inline-field-row">
-            <input type="month" value={endMonth} min={startMonth} onChange={(e) => setEndMonth(e.target.value)} />
+            <div className="fixed-expense-day-input">
+              <input type="month" value={endMonth} min={startMonth} onChange={(e) => setEndMonth(e.target.value)} />
+            </div>
             {endMonth && (
               <button type="button" className="inline-field-save" onClick={() => setEndMonth('')}>
                 지우기
