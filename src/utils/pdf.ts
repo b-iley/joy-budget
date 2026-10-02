@@ -1,11 +1,14 @@
-// The "legacy" build (same package, same API, more bundled polyfills) is
-// pdf.js's own officially-documented entry point for browsers that don't
-// support every modern JS feature the default build assumes — switched to
-// after a real iPhone threw "undefined is not a function" deep inside the
-// default build's worker on a real KB bank statement PDF.
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs'
+// Root-caused via a real "1페이지 처리 실패 (TypeError: undefined is not a
+// function (near '...e of t...'))" report: pdf.js 6's own getTextContent()
+// does `for await (const chunk of this.streamTextContent())`, and Safari
+// versions before 17.4 don't support async-iteration over a ReadableStream
+// at all — the legacy build doesn't help here since it calls the exact same
+// API. Reading the stream manually via getReader()/read() below uses the
+// much older, universally-supported ReadableStream API instead, so the
+// modern build works fine again.
+import * as pdfjsLib from 'pdfjs-dist'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.mjs', import.meta.url).href
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).href
 
 export interface PdfTextItem {
   text: string
@@ -43,13 +46,15 @@ export async function extractPdfText(file: File, password?: string): Promise<Pdf
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     try {
       const page = await pdf.getPage(pageNum)
-      const content = await page.getTextContent()
-      // content.items has been seen coming back nullish on at least one real
-      // device/PDF combination (cause unconfirmed) — guard it instead of
-      // crashing the whole import over one odd page.
-      for (const item of content.items ?? []) {
-        if ('str' in item && item.str.trim()) {
-          items.push({ text: item.str.trim(), x: item.transform[4], y: item.transform[5], page: pageNum })
+      // Not page.getTextContent() — see the import comment above.
+      const reader = page.streamTextContent().getReader()
+      for (;;) {
+        const { value, done } = await reader.read()
+        if (done) break
+        for (const item of value.items ?? []) {
+          if ('str' in item && item.str.trim()) {
+            items.push({ text: item.str.trim(), x: item.transform[4], y: item.transform[5], page: pageNum })
+          }
         }
       }
     } catch (err) {
