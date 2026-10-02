@@ -1,5 +1,6 @@
 import type { OcrLine } from '../ocr'
 import { parseDongbaekjeonScreenshot } from './dongbaekjeon'
+import { parseKakaoBankScreenshot } from './kakaoBank'
 import { parseNaverPayScreenshot } from './naverPay'
 import type { ParsedScreenshotRow } from './types'
 
@@ -25,5 +26,11 @@ export const SCREENSHOT_LIST_PLATFORMS: ScreenshotListPlatform[] = [
     label: '네이버페이 결제내역',
     defaultCategoryId: 'shopping',
     parse: parseNaverPayScreenshot,
+  },
+  {
+    id: 'kakaobank',
+    label: '카카오뱅크 지출내역',
+    defaultCategoryId: 'etc_expense',
+    parse: parseKakaoBankScreenshot,
   },
 ]
