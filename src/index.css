@@ -91,7 +91,7 @@ button {
   width: 100%;
   max-width: 480px;
   min-height: 100dvh;
-  padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
+  padding: calc(20px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom));
   position: relative;
 }
 

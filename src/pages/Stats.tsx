@@ -8,7 +8,6 @@ import { MonthSwitcher } from '../components/MonthSwitcher'
 import { useCategories } from '../context/CategoriesContext'
 import { useTransactions } from '../context/TransactionsContext'
 import type { TransactionType } from '../types'
-import { FIXED_EXPENSE_DISPLAY_CATEGORY } from '../types'
 import { exportMonthAsJson, readBackupFile } from '../utils/backup'
 import { currentMonth, formatMonthTitle, formatWon, monthKey } from '../utils/format'
 import { sendMonthToGoogleSheets } from '../utils/googleSheets'
@@ -34,18 +33,12 @@ export function Stats() {
     [transactions, month]
   )
 
-  // Fixed-expense transactions are bucketed under their own "고정지출" row
-  // instead of their real category, so a 식비 fixed expense shows up as
-  // 고정지출 here, not folded into the 식비 total (categoryId is still the
-  // real category on the transaction itself, just not used for this grouping).
   const rows = useMemo(() => {
-    const categories =
-      type === 'expense' ? [...categoriesFor(type), FIXED_EXPENSE_DISPLAY_CATEGORY] : categoriesFor(type)
+    const categories = categoriesFor(type)
     const totals = new Map<string, number>()
     for (const t of transactions) {
       if (t.type !== type || monthKey(t.date) !== month) continue
-      const bucketId = t.fixedExpenseId ? FIXED_EXPENSE_DISPLAY_CATEGORY.id : t.categoryId
-      totals.set(bucketId, (totals.get(bucketId) ?? 0) + t.amount)
+      totals.set(t.categoryId, (totals.get(t.categoryId) ?? 0) + t.amount)
     }
     const total = Array.from(totals.values()).reduce((a, b) => a + b, 0)
     return categories

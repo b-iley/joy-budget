@@ -19,14 +19,13 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 
 export function FixedExpenses() {
   const navigate = useNavigate()
-  const { categoriesFor, getCategory } = useCategories()
+  const { getCategory } = useCategories()
   const { fixedExpenses, addFixedExpense, updateFixedExpense, removeFixedExpense } = useFixedExpenses()
-  const expenseCategories = categoriesFor('expense')
+  const category = getCategory('fixed_expense')
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [title, setTitle] = useState('')
   const [amountText, setAmountText] = useState('')
-  const [categoryId, setCategoryId] = useState(expenseCategories[0]?.id ?? '')
   const [day, setDay] = useState('1')
   const [startMonth, setStartMonth] = useState(currentMonth())
   const [endMonth, setEndMonth] = useState('')
@@ -39,7 +38,6 @@ export function FixedExpenses() {
   const canSave =
     Boolean(title.trim()) &&
     amount > 0 &&
-    categoryId &&
     dayNum >= 1 &&
     dayNum <= 31 &&
     Boolean(startMonth) &&
@@ -49,7 +47,6 @@ export function FixedExpenses() {
     setEditingId(null)
     setTitle('')
     setAmountText('')
-    setCategoryId(expenseCategories[0]?.id ?? '')
     setDay('1')
     setStartMonth(currentMonth())
     setEndMonth('')
@@ -60,7 +57,6 @@ export function FixedExpenses() {
     setEditingId(fe.id)
     setTitle(fe.title)
     setAmountText(String(fe.amount))
-    setCategoryId(fe.categoryId)
     setDay(String(fe.day))
     setStartMonth(fe.startMonth)
     setEndMonth(fe.endMonth ?? '')
@@ -72,7 +68,6 @@ export function FixedExpenses() {
     const input = {
       title: title.trim(),
       amount,
-      categoryId,
       day: dayNum,
       startMonth,
       endMonth: endMonth || undefined,
@@ -112,9 +107,10 @@ export function FixedExpenses() {
       </header>
 
       <p className="section-hint">
-        월세, 구독료처럼 매달 반복되는 지출을 한 번 등록해두면 따로 입력하지 않아도 자동으로 기록돼요. 생성된
-        내역은 홈 화면과 통계에서 카테고리 대신 "고정지출"로 따로 표시돼요. 다만 앱에 별도 서버가 없어서, 그 달이
-        된 뒤 앱을 한 번은 열어야 그 달치가 채워져요.
+        월세, 구독료처럼 매달 반복되는 지출을 한 번 등록해두면 따로 입력하지 않아도 "고정지출" 카테고리로 자동
+        기록돼요. 다만 앱에 별도 서버가 없어서, 그 달이 된 뒤 앱을 한 번은 열어야 그 달치가 채워져요. 반복 없이
+        이번 한 번만 고정지출로 기록하고 싶으면, 여기 등록할 필요 없이 내역 추가할 때 카테고리를 "고정지출"로
+        고르면 돼요.
       </p>
 
       <div className="settings-section">
@@ -136,14 +132,6 @@ export function FixedExpenses() {
           />
           <span>원</span>
         </div>
-
-        <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-          {expenseCategories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.label}
-            </option>
-          ))}
-        </select>
 
         <div className="fixed-expense-fields-row">
           <label className="fixed-expense-field">
@@ -203,47 +191,44 @@ export function FixedExpenses() {
           <p className="section-hint">아직 등록된 고정지출이 없어요.</p>
         ) : (
           <div className="draft-list">
-            {fixedExpenses.map((fe) => {
-              const category = getCategory(fe.categoryId)
-              return (
-                <div key={fe.id} className="draft-row">
-                  <span
-                    className="transaction-icon"
-                    style={{ background: `${category.color}22`, color: category.color }}
-                  >
-                    <CategoryIcon name={category.icon} size={18} />
+            {fixedExpenses.map((fe) => (
+              <div key={fe.id} className="draft-row">
+                <span
+                  className="transaction-icon"
+                  style={{ background: `${category.color}22`, color: category.color }}
+                >
+                  <CategoryIcon name={category.icon} size={18} />
+                </span>
+                <div className="draft-main">
+                  <div className="draft-top">
+                    <span className="draft-merchant">{fe.title}</span>
+                    <span className="draft-date">매달 {fe.day}일</span>
+                  </div>
+                  <span className="fixed-expense-meta">
+                    {formatWon(fe.amount)}
+                    {fe.endMonth ? ` · ${formatMonthTitle(fe.endMonth)}까지` : ''}
                   </span>
-                  <div className="draft-main">
-                    <div className="draft-top">
-                      <span className="draft-merchant">{fe.title}</span>
-                      <span className="draft-date">매달 {fe.day}일</span>
-                    </div>
-                    <span className="fixed-expense-meta">
-                      {category.label} · {formatWon(fe.amount)}
-                      {fe.endMonth ? ` · ${formatMonthTitle(fe.endMonth)}까지` : ''}
-                    </span>
-                  </div>
-                  <div className="draft-amount">
-                    <button
-                      type="button"
-                      className="category-pill-action"
-                      onClick={() => startEdit(fe)}
-                      aria-label={`${fe.title} 수정`}
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      className="category-pill-action"
-                      onClick={() => handleRemove(fe.id)}
-                      aria-label={`${fe.title} 삭제`}
-                    >
-                      <Trash size={16} />
-                    </button>
-                  </div>
                 </div>
-              )
-            })}
+                <div className="draft-amount">
+                  <button
+                    type="button"
+                    className="category-pill-action"
+                    onClick={() => startEdit(fe)}
+                    aria-label={`${fe.title} 수정`}
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="category-pill-action"
+                    onClick={() => handleRemove(fe.id)}
+                    aria-label={`${fe.title} 삭제`}
+                  >
+                    <Trash size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

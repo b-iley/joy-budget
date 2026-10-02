@@ -70,7 +70,7 @@ export function FixedExpensesProvider({ children }: { children: ReactNode }) {
           id: newId(),
           type: 'expense',
           amount: fe.amount,
-          categoryId: fe.categoryId,
+          categoryId: 'fixed_expense',
           date: `${month}-${String(day).padStart(2, '0')}`,
           title: fe.title,
           memo: fe.memo,

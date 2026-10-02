@@ -51,15 +51,16 @@ export interface Transaction {
 
 // A recurring expense template (rent, subscriptions, etc.) — the app has no
 // background job, so a month's transaction is actually created the next time
-// the app is opened on or after that month, not on a schedule. categoryId
-// still says what KIND of spending it is (식비, 생필품, ...) for stats
-// purposes, but any transaction generated from a template displays with
-// FIXED_EXPENSE_DISPLAY_CATEGORY's icon/label instead.
+// the app is opened on or after that month, not on a schedule. Every
+// transaction a template generates always uses the 'fixed_expense' category —
+// there's no per-template category choice, since a manually-entered
+// transaction categorized as 고정지출 and a template-generated one are meant
+// to be the exact same category, just created differently (one-off vs
+// auto-recurring).
 export interface FixedExpense {
   id: string
   title: string
   amount: number
-  categoryId: string
   day: number // 1–31, billing day of month; clamped to the month's last day if shorter
   startMonth: string // YYYY-MM — first month this applies from
   endMonth?: string // YYYY-MM, inclusive — last month this applies to; undefined means no end
@@ -98,6 +99,7 @@ export const EXPENSE_CATEGORIES: Category[] = [
   { id: 'allowance', label: '용돈', icon: 'HandCoins', color: '#F9A825' },
   { id: 'event', label: '이벤트', icon: 'PartyPopper', color: '#D81B60' },
   { id: 'utilities', label: '공과금', icon: 'Zap', color: '#00897B' },
+  { id: 'fixed_expense', label: '고정지출', icon: 'CalendarClock', color: '#3949AB' },
   { id: 'etc_expense', label: '기타', icon: 'MoreHorizontal', color: '#90A4AE' },
 ]
 
@@ -121,15 +123,4 @@ export function getCategory(id: string, custom: Category[] = []): Category {
 export function categoriesFor(type: TransactionType, custom: Category[] = []): Category[] {
   const defaults = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES
   return [...defaults, ...custom.filter((c) => c.type === type)]
-}
-
-// Not a real, selectable category — a transaction generated from a
-// FixedExpense template displays with this instead of its real category, so
-// it's instantly recognizable as recurring regardless of what it's actually
-// categorized as (categoryId is still the real category, used for stats).
-export const FIXED_EXPENSE_DISPLAY_CATEGORY: Category = {
-  id: 'fixed_expense_display',
-  label: '고정지출',
-  icon: 'CalendarClock',
-  color: '#3949AB',
 }

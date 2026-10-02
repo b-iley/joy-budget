@@ -6,7 +6,6 @@ import { TransactionRow } from '../components/TransactionRow'
 import { useCategories } from '../context/CategoriesContext'
 import { useTransactions } from '../context/TransactionsContext'
 import type { TransactionType } from '../types'
-import { FIXED_EXPENSE_DISPLAY_CATEGORY } from '../types'
 import { currentMonth, formatDayLabel, formatMonthTitle, formatWon, monthKey } from '../utils/format'
 
 export function CategoryDetail() {
@@ -19,21 +18,14 @@ export function CategoryDetail() {
   const state = (location.state as { month?: string; type?: TransactionType } | null) ?? {}
   const month = state.month ?? currentMonth()
   const type = state.type ?? 'expense'
-  const isFixedExpenseView = categoryId === FIXED_EXPENSE_DISPLAY_CATEGORY.id
-  const category = isFixedExpenseView ? FIXED_EXPENSE_DISPLAY_CATEGORY : getCategory(categoryId ?? '')
+  const category = getCategory(categoryId ?? '')
   const [subcategoryFilter, setSubcategoryFilter] = useState<string | null>(null)
   const [subcategorySelectMode, setSubcategorySelectMode] = useState(false)
   const [selectedSubcategoryIds, setSelectedSubcategoryIds] = useState<Set<string>>(new Set())
 
   const items = useMemo(
-    () =>
-      transactions.filter(
-        (t) =>
-          t.type === type &&
-          monthKey(t.date) === month &&
-          (isFixedExpenseView ? Boolean(t.fixedExpenseId) : t.categoryId === categoryId)
-      ),
-    [transactions, categoryId, type, month, isFixedExpenseView]
+    () => transactions.filter((t) => t.categoryId === categoryId && t.type === type && monthKey(t.date) === month),
+    [transactions, categoryId, type, month]
   )
 
   const total = items.reduce((sum, t) => sum + t.amount, 0)
