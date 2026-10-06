@@ -15,32 +15,55 @@ const DATE_HEADER_RE = /^(\d{1,2})\.(\d{1,2})$/
 // discarded instead of required to be "원".
 const ROW_RE = /^(.+?)\s+(-?\d{1,3}(?:,\d{3})*)\s*(?:원)?.{0,2}$/
 
+// The payment-method label line under each entry — used only to recognize
+// that a line is "just a label" so it's never picked as the fallback name
+// below, not to anchor successful rows (the last entry in a cropped
+// screenshot can be missing this line entirely).
+const PAYMENT_LABEL_RE = /카드|계좌이체|현금/
+
 // This is the "지출 상세내역" (expense detail) screen specifically — every row
 // on it is already an expense, so there's nothing to exclude the way the KB
 // statement PDF has to exclude deposits.
 export function parseKakaoBankScreenshot(lines: OcrLine[], year: number): ParsedScreenshotRow[] {
-  const rows: ParsedScreenshotRow[] = []
-  let currentDate: string | null = null
-
+  // Group lines into day blocks first: everything from one "MM.DD" header up
+  // to (not including) the next one.
+  const blocks: { date: string; lines: OcrLine[] }[] = []
   for (const line of lines) {
-    const text = line.text.trim()
-
-    const dateMatch = text.match(DATE_HEADER_RE)
+    const dateMatch = line.text.trim().match(DATE_HEADER_RE)
     if (dateMatch) {
       const [, month, day] = dateMatch
-      currentDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+      blocks.push({ date: `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`, lines: [] })
       continue
     }
+    if (blocks.length > 0) blocks[blocks.length - 1].lines.push(line)
+  }
 
-    if (!currentDate) continue
-    const rowMatch = text.match(ROW_RE)
-    if (!rowMatch) continue
+  const rows: ParsedScreenshotRow[] = []
 
-    const [, merchantRaw, amountText] = rowMatch
-    const amount = Math.abs(Number(amountText.replace(/,/g, '')))
-    if (!amount) continue
+  for (const block of blocks) {
+    let matchedAny = false
 
-    rows.push({ date: currentDate, merchant: merchantRaw.trim(), amount })
+    for (const line of block.lines) {
+      const rowMatch = line.text.trim().match(ROW_RE)
+      if (!rowMatch) continue
+      matchedAny = true
+      const [, merchantRaw, amountText] = rowMatch
+      const amount = Math.abs(Number(amountText.replace(/,/g, '')))
+      rows.push({ date: block.date, merchant: merchantRaw.trim(), amount: amount > 0 ? amount : null })
+    }
+
+    // The amount didn't OCR anywhere in this day's block (seen on a real
+    // screenshot) — surface whatever text was recognized with no amount
+    // instead of silently dropping the day entirely. The review screen
+    // already shows a "금액 인식 실패" warning and leaves it unchecked for
+    // anything with amount: null, so this just needs to reach that path.
+    if (!matchedAny) {
+      const fallback = block.lines.find((l) => {
+        const t = l.text.trim()
+        return t.length > 0 && !PAYMENT_LABEL_RE.test(t)
+      })
+      if (fallback) rows.push({ date: block.date, merchant: fallback.text.trim(), amount: null })
+    }
   }
 
   return rows
